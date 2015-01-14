@@ -27,5 +27,20 @@
 		android:id="@+id/text"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:text="@string/hello_square"/>
+		android:text="@string/hello_square"
+		android:textSize="20sp"/>
+
+	<TextView
+		android:id="@+id/latitude"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/default_latitude"
+		android:textSize="20sp"/>
+
+	<TextView
+		android:id="@+id/longitude"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:text="@string/default_longitude"
+		android:textSize="20sp"/>
 </LinearLayout>

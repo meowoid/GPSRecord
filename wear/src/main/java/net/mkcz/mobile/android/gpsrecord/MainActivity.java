@@ -41,9 +41,10 @@ public class MainActivity extends Activity
 	private static final long UPDATE_INTERVAL_MS = 500;
 	private static final long FASTEST_INTERVAL_MS = 100;
 	private TextView m_textView;
+	private TextView m_textLat;
+	private TextView m_textLong;
 	private GoogleApiClient m_googleApiClient;
 	private LocationRequest m_locationRequest;
-
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -58,17 +59,19 @@ public class MainActivity extends Activity
 			{
 				m_textView = (TextView) stub.findViewById(R.id.text);
 				m_textView.setText("Acquiring GPS");
+				m_textLat = (TextView) stub.findViewById(R.id.latitude);
+				m_textLong = (TextView) stub.findViewById(R.id.longitude);
 			}
 		});
 
-		this.m_googleApiClient = new GoogleApiClient.Builder(this)
+		m_googleApiClient = new GoogleApiClient.Builder(this)
 				.addApi(LocationServices.API)
 				.addApi(Wearable.API)
 				.addConnectionCallbacks(this)
 				.addOnConnectionFailedListener(this)
 				.build();
 
-		this.m_locationRequest = LocationRequest.create()
+		m_locationRequest = LocationRequest.create()
 		                                        .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
 		                                        .setInterval(UPDATE_INTERVAL_MS)
 		                                        .setFastestInterval(FASTEST_INTERVAL_MS);
@@ -80,18 +83,18 @@ public class MainActivity extends Activity
 	protected void onResume()
 	{
 		super.onResume();
-		this.m_googleApiClient.connect();
+		m_googleApiClient.connect();
 	}
 
 	@Override
 	protected void onPause()
 	{
 		super.onPause();
-		if (this.m_googleApiClient.isConnected())
+		if (m_googleApiClient.isConnected())
 		{
-			LocationServices.FusedLocationApi.removeLocationUpdates(this.m_googleApiClient, this);
+			LocationServices.FusedLocationApi.removeLocationUpdates(m_googleApiClient, this);
 		}
-		this.m_googleApiClient.disconnect();
+		m_googleApiClient.disconnect();
 	}
 
 	@Override
@@ -106,36 +109,47 @@ public class MainActivity extends Activity
 					{
 						if (result.getStatus().isSuccess())
 						{
-							m_textView.setText("Successfully requested location updates");
+							m_textView.setText("Location request: SUCCESS");
 						}
 						else
 						{
-							m_textView.setText("Failed in requesting location updates, "
-							                   + "status code: "
+							m_textView.setText("Location request: FAILED --  "
 							                   + result.getStatus().getStatusCode()
-							                   + ", message: "
+							                   + " --  "
 							                   + result.getStatus().getStatusMessage());
 						}
 					}
 				});
+		Location m_location = LocationServices.FusedLocationApi.getLastLocation(
+				m_googleApiClient);
+		if (m_location != null)
+		{
+			m_textLat.setText(String.valueOf(m_location.getLatitude()));
+			m_textLong.setText(String.valueOf(m_location.getLongitude()));
+		}
 	}
 
 	@Override
 	public void onConnectionSuspended(int i)
 	{
-
+		m_textView.setText("Location request: SUSPENDED");
 	}
 
 	@Override
 	public void onLocationChanged(Location location)
 	{
-
+		m_textView.setText("Location request: DING!");
+		if (location != null)
+		{
+			m_textLat.setText("Lat  : " + String.valueOf(location.getLatitude()));
+			m_textLong.setText("Long : " + String.valueOf(location.getLongitude()));
+		}
 	}
 
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult)
 	{
-
+		m_textView.setText("Location request: FAILED");
 	}
 
 	private boolean hasGPS()
