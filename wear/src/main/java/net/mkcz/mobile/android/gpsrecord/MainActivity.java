@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.wearable.view.WatchViewStub;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -37,9 +38,9 @@ public class MainActivity extends Activity
 		           GoogleApiClient.OnConnectionFailedListener,
 		           LocationListener
 {
-
 	private static final long UPDATE_INTERVAL_MS = 500;
 	private static final long FASTEST_INTERVAL_MS = 100;
+	private long m_numLocationUpdates;
 	private TextView m_textView;
 	private TextView m_textLat;
 	private TextView m_textLong;
@@ -72,11 +73,11 @@ public class MainActivity extends Activity
 				.build();
 
 		m_locationRequest = LocationRequest.create()
-		                                        .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-		                                        .setInterval(UPDATE_INTERVAL_MS)
-		                                        .setFastestInterval(FASTEST_INTERVAL_MS);
+		                                   .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+		                                   .setInterval(UPDATE_INTERVAL_MS);
 
-
+		this.m_numLocationUpdates = 0;
+		Log.i("HELLO_WORLD", "This system has gps: " + hasGPS());
 	}
 
 	@Override
@@ -92,31 +93,39 @@ public class MainActivity extends Activity
 		super.onPause();
 		if (m_googleApiClient.isConnected())
 		{
-			LocationServices.FusedLocationApi.removeLocationUpdates(m_googleApiClient, this);
+//			LocationServices.FusedLocationApi.removeLocationUpdates(m_googleApiClient, this);
 		}
 		m_googleApiClient.disconnect();
+	}
+
+	private boolean hasGPS()
+	{
+		return getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS);
 	}
 
 	@Override
 	public void onConnected(Bundle bundle)
 	{
 		LocationServices.FusedLocationApi
-				.requestLocationUpdates(this.m_googleApiClient, m_locationRequest, this)
+				.requestLocationUpdates(m_googleApiClient, m_locationRequest, this)
 				.setResultCallback(new ResultCallback()
 				{
 					@Override
 					public void onResult(Result result)
 					{
+						Log.i("HELLO_WORLD", String.valueOf(result));
 						if (result.getStatus().isSuccess())
 						{
-							m_textView.setText("Location request: SUCCESS");
+							updateDisplay(DISPLAY_FIELD.UPDATE_NO, "SUCC");
 						}
 						else
 						{
-							m_textView.setText("Location request: FAILED --  "
-							                   + result.getStatus().getStatusCode()
-							                   + " --  "
-							                   + result.getStatus().getStatusMessage());
+
+							String text = "FAIL --  "
+							              + result.getStatus().getStatusCode()
+							              + " --  "
+							              + result.getStatus().getStatusMessage();
+							updateDisplay(DISPLAY_FIELD.UPDATE_NO, text);
 						}
 					}
 				});
@@ -124,36 +133,62 @@ public class MainActivity extends Activity
 				m_googleApiClient);
 		if (m_location != null)
 		{
-			m_textLat.setText(String.valueOf(m_location.getLatitude()));
-			m_textLong.setText(String.valueOf(m_location.getLongitude()));
+			updateDisplay(DISPLAY_FIELD.LATITUTDE, m_location.getLatitude());
+			updateDisplay(DISPLAY_FIELD.LONGITUDE, m_location.getLongitude());
 		}
 	}
 
 	@Override
 	public void onConnectionSuspended(int i)
 	{
-		m_textView.setText("Location request: SUSPENDED");
+		updateDisplay(DISPLAY_FIELD.UPDATE_NO, "SUSP");
+	}
+
+	private void updateDisplay(final DISPLAY_FIELD what, final Object value)
+	{
+		String stringValue = String.valueOf(value);
+		switch (what)
+		{
+			case UPDATE_NO:
+			{
+				m_textView.setText("Location updates: " + stringValue);
+				break;
+			}
+
+			case LATITUTDE:
+			{
+				m_textLat.setText("Lat  : " + stringValue);
+				break;
+			}
+
+			case LONGITUDE:
+			{
+				m_textLong.setText("Long : " + stringValue);
+				break;
+			}
+		}
 	}
 
 	@Override
 	public void onLocationChanged(Location location)
 	{
-		m_textView.setText("Location request: DING!");
+		Log.i("HELLO_WORLD", "Received location: " + location);
+		updateDisplay(DISPLAY_FIELD.UPDATE_NO, ++m_numLocationUpdates);
 		if (location != null)
 		{
-			m_textLat.setText("Lat  : " + String.valueOf(location.getLatitude()));
-			m_textLong.setText("Long : " + String.valueOf(location.getLongitude()));
+			updateDisplay(DISPLAY_FIELD.LATITUTDE, location.getLatitude());
+			updateDisplay(DISPLAY_FIELD.LONGITUDE, location.getLongitude());
 		}
 	}
 
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult)
 	{
-		m_textView.setText("Location request: FAILED");
+		updateDisplay(DISPLAY_FIELD.UPDATE_NO, "FAIL");
 	}
 
-	private boolean hasGPS()
+	private enum DISPLAY_FIELD
 	{
-		return getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS);
+		UPDATE_NO, LATITUTDE, LONGITUDE
 	}
 }
